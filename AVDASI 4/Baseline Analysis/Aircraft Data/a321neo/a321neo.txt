@@ -1,0 +1,7 @@
+MTOW: 93,500
+MZFW: 75,600
+S: 122.4
+Mach: 0.78
+Range: 4000nm
+Ceiling: 390
+

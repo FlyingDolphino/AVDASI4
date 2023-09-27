@@ -1,0 +1,9 @@
+MTOW: 98,880
+MZFW: 84,360
+S: 185.2
+Mach: 0.80
+Range: 3900nm
+Ceiling: 420
+
+
+
