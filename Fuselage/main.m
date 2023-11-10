@@ -4,13 +4,19 @@ clear all
 %Geometry
 FuselageRadius = 381;
 NumberOfStringers = 16; %number disributed around the circumference
-StringerArea  = 100; %mm^2
+StringerArea  = -100; %mm^2
 SkinThickness = 0.8; %mm 
 
                     
 %Material Properties
 
 %Loads
+
+Mx = 100e3*150; %Nmm applied to the vertical plane
+F = 100e3; %N
+Fd = 0;   %mm, distance the shear force is applied from the vertical line of symmetry
+%this is to be changed to take loads from an excel pending W+B figures
+
 
 %Boom and Skin idealisation
 %setup positions
@@ -45,5 +51,39 @@ for i = 1:NumberOfStringers
 end
 
 
+%Stresses due to bending
+sigmaZ = zeros(NumberOfStringers,1);
+for i =1:NumberOfStringers
+    sigmaZ(i) = Mx*stringerPos(i,2)/Ixx;
+end
 
-%Bending
+%Shear
+%Start by finding the open section shear flow
+qb = zeros(NumberOfStringers,1);
+for i = 1:NumberOfStringers
+    if i ==1
+        qb(i)=0;
+    elseif isnan(B(i))
+        qb(i)=qb(i-1);
+    else
+
+        qb(i) = B(i)*stringerPos(i,2)+ qb(i-1);
+    end
+    
+end
+qb = -F/Ixx *qb;
+
+%work out the closed section shear flow
+A = pi*FuselageRadius^2;
+Askin = A/16;
+qs0 = (-F*Fd - 2*Askin*sum(qb))/(2*A);
+qs = qb + qs0;
+
+%Torsion
+%shear flow due to pure torque
+qPureTorsion = Mx/(2*A);
+qs = qs+qPureTorsion;
+
+
+%Pressure
+

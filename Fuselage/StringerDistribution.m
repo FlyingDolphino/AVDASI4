@@ -5,7 +5,7 @@ function [stringerPos,b] = StringerDistribution(N,radius)
     %fuselage returning the coordinates, (0,0) is the center 
     
     % Calculate the angular separation between points
-    theta = linspace(0, 2 * sym(pi), N+1); % +1 to close the circle, symbolic Pi used to avoid floating point error
+    theta = linspace(sym(pi)/2, 5/2 * sym(pi), N+1); % +1 to close the circle, symbolic Pi used to avoid floating point error
 
     % Calculate the coordinates of the points
     x = radius * cos(theta(1:end-1));
