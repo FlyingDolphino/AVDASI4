@@ -12,17 +12,17 @@ function [stringerPos,b] = StringerDistribution(N,radius)
     y = radius * sin(theta(1:end-1));
     
     % Plot the fuselage
-    t = linspace(0, 2 * sym(pi), 1000);
-    circleX = radius * cos(t);
-    circleY = radius * sin(t);
-    plot(circleX, circleY, 'LineWidth', 2);
-    hold on
-    % Plot the stringers
-    plot(x, y, 'o', 'MarkerSize', 10, 'MarkerFaceColor', 'b');
-
-    title('Boom and Skin Idealisation of Fuselage');
-    axis equal;
-    grid on;
+%     t = linspace(0, 2 * sym(pi), 1000);
+%     circleX = radius * cos(t);
+%     circleY = radius * sin(t);
+%     plot(circleX, circleY, 'LineWidth', 2);
+%     hold on
+%     % Plot the stringers
+%     plot(x, y, 'o', 'MarkerSize', 10, 'MarkerFaceColor', 'b');
+% 
+%     title('Boom and Skin Idealisation of Fuselage');
+%     axis equal;
+%     grid on;
     
     %work out the seperation between the points
     b = sym(pi)*radius*2/N;
