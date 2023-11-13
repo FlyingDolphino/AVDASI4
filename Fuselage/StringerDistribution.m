@@ -25,13 +25,12 @@ function [stringerPos,b] = StringerDistribution(N,radius)
 %     grid on;
     
     %work out the seperation between the points
-    b = sym(pi)*radius*2/N;
+    b = pi*radius*2/N;
     
     
     %output setup
-    x = [x]';
     y = [y]';
-    stringerPos = double([x y]); %converted back to double 
+    stringerPos = double(y); %converted back to double 
    
 
 end
