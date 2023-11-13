@@ -10,8 +10,8 @@ TailRadius = (750e-3)/2;%m
 FuselageRadius = 2.2895; %m 
 fuselageStart = 5;%m
 FuselageLength = 27.8;%m the constant radius part of the fuselage
-NumberOfFrames = 0; %This does not include the front and rear pressure bulkheads! 
-SkinThickness = 2.8e-3; %m 
+NumberOfFrames = 40; %This does not include the front and rear pressure bulkheads! 
+SkinThickness = 15e-3; %m 
 NumberOfStringers = 16; %number disributed around the circumference, assumed to be rectangular
 StringerThickness =1e-3;%m
 StringerHeight = 1e-3;%m
@@ -36,7 +36,7 @@ LoadCases = [1,2.5];
 P = 500;
 Load = csvread('Loads.csv',1,0);
 x = Load(:,1);
-massperL = Load(:,2);
+massperL = Load(:,2); %the convention is mass is activing negative, eg downwards is -ve
 
 
 
@@ -45,6 +45,7 @@ massperL = Load(:,2);
 
 %DEPRECATED
 Mx = 0; %Nmm applied to the vertical plane
+My =0;
 F = 0; %N
 Fd = 0;   %mm, distance the shear force is applied from the vertical line of symmetry
 %this is to be changed to take loads from an excel pending W+B figures
@@ -74,6 +75,7 @@ radii = RadiusDistribution(x,FuselageRadius,NoseRadius,TailRadius,fuselageStart,
 %Perform idealisation for each step in the length
 %init arrays
 B = zeros(NumberOfStringers,length(x));
+b = zeros(length(x),1);
 IxxDistribution = zeros(length(x),1);
 stringerPos = zeros(NumberOfStringers,length(x));
 
@@ -86,11 +88,11 @@ for j = 1:length(x)
     
   
         
-    [stringerPos(:,j),b] = StringerDistribution(NumberOfStringers,radii(j)); 
+    [stringerPos(:,j),b(j)] = StringerDistribution(NumberOfStringers,radii(j)); 
  
 
     %Boom area calculations
-    B(:,j)= BoomArea(SkinThickness,b,stringerPos(:,j),StringerArea,NumberOfStringers);
+    B(:,j)= BoomArea(SkinThickness,b(j),stringerPos(:,j),StringerArea,NumberOfStringers);
 
 
     %Second Moment of area
@@ -108,6 +110,8 @@ for j = 1:length(x)
 end
 
 
+%Result Analysis, potentially going to bundle this into a function
+My=0; %Temporary!!!!!
 
 EIx = E*IxxDistribution;
 Q = zeros(length(x),2);
@@ -115,7 +119,7 @@ BM = zeros(length(x),2);
 n = LoadCases;
 %Internal forces
 for i = 1:length(x)-1
-    Q(i,:) = (-trapz(x(i:length(x)),massperL(i:length(x)))*n);
+    Q(i,:) = -(trapz(x(i:length(x)),massperL(i:length(x)))*n);
    
 end
 
@@ -123,9 +127,6 @@ end
 for i = 1:length(x)-1 
         BM(i,:) = -trapz(x(i:length(x)),Q(i:length(x),:)); 
 end
-
-
-
 
 
 maxShear = zeros(length(x),2);
@@ -159,17 +160,19 @@ for j = 1:length(x)
             qb(i)=0;
         elseif isnan(B(i))
             qb(i)=qb(i-1);
-        else
+      
+        else            
             qb(i) = B(i)*stringerPos(i,j)+ qb(i-1);
         end
 
     end
 
-    qb = -F./IxxDistribution(j) .*qb;
+    qb = abs(qb);
+    qb = F./IxxDistribution(j) .*qb;
     %work out the closed section shear flow
     A = pi*radii(j)^2;
     Askin = A/NumberOfStringers;
-    qs0 = (-F*Fd - 2*Askin*sum(qb))/(2*A);
+    qs0 = (-F*0 - 2*Askin*sum(qb))/(2*A);
     qs = qb + qs0;
     %Torsion contribution to the shear flow
     %shear flow due to pure torque
@@ -204,17 +207,22 @@ FBlkStress = ones(100,1)*P*1.5*rfront/(2*t);
 
 %Buckling
 %Column
-Area = NumberOfStringers*StringerArea + pi*(FuselageRadius^2-(FuselageRadius-SkinThickness)^2);
-gyrationRad = sqrt(Ixx/Area);
-columnCrit = pi^2*E/(buckLength/gyrationRad)^2;
+columnCrit = zeros(length(x),1);
+plateCrit = columnCrit;
+for i = 1:length(x)
+    
+    Area = NumberOfStringers*StringerArea + pi*(FuselageRadius^2-(radii(i)-SkinThickness)^2);
+    gyrationRad = sqrt(IxxDistribution(i)/Area);
+    columnCrit(i) = pi^2*E/(buckLength/gyrationRad)^2;
+    
+    %Plate
+    plateCrit(i) = 4*pi^2*E/(12*(1-v^2)) *(SkinThickness/b(i))^2;
 
-%Plate
-b = double(b);
-plateCrit = 4*pi^2*E/(12*(1-v^2)) *(SkinThickness/b)^2;
+    
+end
 
 %stringers as plates
 stringerCrit = 0.43*pi^2*E/(12*(1-v^2)) *(StringerThickness/StringerHeight)^2;
-
 
 %Von mises fail condition WIP
 %principal stresses
@@ -228,6 +236,6 @@ vonFail = vonMises - YieldStrength;
 
 %Failiure Matrix, if negative, the structure is safe, this is where we
 %include the 1.5 saftey margin
-maxSigma = maxSigma*1.5;
+maxSigma = maxSigma(:,2)*1.5; %selects the higher load case and adds the saftey margin
 gyield = abs(maxSigma)-YieldStrength;
 c = [gyield, maxSigma-columnCrit, maxSigma-plateCrit,maxSigma-stringerCrit,RBlkStress - YieldStrength,FBlkStress-YieldStrength];
