@@ -16,7 +16,7 @@ function[optimum] = Optimise()
         Stringer = i;
         x0 =[NumberOfFrames,SkinThickness,StringerThickness,StringerHeight];
         lb=[2,1e-3,1e-2,1e-2];
-        ub=[60,0.5,25e-2,25e-2];
+        ub=[60,3,3,3];
 
         nonLinearConstraint = @(x) Analysis(x,Stringer,Load);
         options = optimoptions(@fmincon,'Display','iter','MaxFunctionEvaluations',4e10,'MaxIterations',5e10);
@@ -32,7 +32,7 @@ function[optimum] = Optimise()
     end
     
     
-    optimum = [results(smallest,:),smallest, (smallest) fvalCheck];
+    optimum = [results(smallest,:), (smallest) fvalCheck];
         
 
 end

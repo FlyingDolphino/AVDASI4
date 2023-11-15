@@ -31,7 +31,7 @@ LDSkin =Askin*rhoSkin*SkinThickness;
 %An estimate for the weight of a single rib, we assume the total area of
 %the rib = 1.5 that of the skin area, and the total length of a rib is = to
 %the skin thickness
-ribWeight = 2*Askin*rhoRib*3e-3;
+ribWeight = Askin*rhoRib*3e-3;
 totalRibWeight = ribWeight*NumberOfRibs;
 
 
