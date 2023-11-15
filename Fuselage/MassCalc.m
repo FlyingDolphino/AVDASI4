@@ -5,14 +5,11 @@ rhoSkin = 2000;
 rhoRib = rhoSkin;
 rhoStringer = rhoSkin;
 
+%property array = [NumberOfFrames,SkinThickness,StringerThickness,StringerHeight]
 
-
-
-%property array = [StringerArea,NumberOfRibs,SkinThickness]
-
-StringerArea = propertyArray(1);
-NumberOfRibs = propertyArray(2);
-SkinThickness = propertyArray(3);
+StringerArea = propertyArray(3)*propertyArray(4);
+NumberOfRibs = propertyArray(1);
+SkinThickness = propertyArray(2);
 
 
 LDStringer =NumberOfStringers*StringerArea*rhoStringer;
@@ -27,13 +24,14 @@ LDStringer =NumberOfStringers*StringerArea*rhoStringer;
 
 
 Askin = pi*((FuselageRadius^2)-(FuselageRadius-SkinThickness)^2);
-LDSkin =Askin*rhoSkin;
+LDSkin =Askin*rhoSkin*SkinThickness;
 
 %ribs are a bit more complicated, they are at fixed intervals along the
 %fuselage
 %An estimate for the weight of a single rib, we assume the total area of
-%the rib = 1.5 that of the skin area
-ribWeight = 1.5*Askin*rhoRib;
+%the rib = 1.5 that of the skin area, and the total length of a rib is = to
+%the skin thickness
+ribWeight = 2*Askin*rhoRib*3e-3;
 totalRibWeight = ribWeight*NumberOfRibs;
 
 

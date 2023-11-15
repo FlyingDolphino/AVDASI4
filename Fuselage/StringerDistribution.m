@@ -5,16 +5,17 @@ function [stringerPos,b] = StringerDistribution(N,radius)
     %fuselage returning the coordinates, (0,0) is the center 
     
     % Calculate the angular separation between points
-    theta = linspace(sym(pi)/2, 5/2 * sym(pi), N+1); % +1 to close the circle, symbolic Pi used to avoid floating point error
+    theta = linspace(pi/2, 5/2 * pi, N+1); % +1 to close the circle
     
    
 
-    % Calculate the coordinates of the points
+    % Calculate the coordinates of the points, there will be a floating
+    % point error, this might be fixed later
     x = radius * cos(theta(1:end-1));
     y = radius * sin(theta(1:end-1));
     
-    % Plot the fuselage
-%     t = linspace(0, 2 * sym(pi), 1000);
+    % Plot the fuselage, this is for validation more than anything
+%     t = linspace(0, 2 * pi, 1000);
 %     circleX = radius * cos(t);
 %     circleY = radius * sin(t);
 %     plot(circleX, circleY, 'LineWidth', 2);
@@ -26,7 +27,7 @@ function [stringerPos,b] = StringerDistribution(N,radius)
 %     axis equal;
 %     grid on;
     
-    %work out the seperation between the points
+    %work out the seperation between the points, arc length
     b = pi*radius*2/N;
     
     

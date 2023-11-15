@@ -1,5 +1,14 @@
-function [c] = Analysis(x,Stringer)
+function [c,ceq] = Analysis(x,Stringer,Load)
+    
+    g = 9.81;
 
+
+    %Material Properties, starting with just aluminium
+    E = 90e9;
+    v = 0.3;
+    YieldStrength = 276e6;
+
+    
     NumberOfFrames = x(1);
     SkinThickness = x(2);
     StringerThickness = x(3);
@@ -7,19 +16,11 @@ function [c] = Analysis(x,Stringer)
     StringerArea = StringerThickness*StringerHeight;
     NumberOfStringers = Stringer;
     [totalSpan,NoseRadius,TailRadius,FuselageRadius,fuselageStart,FuselageLength,rrear,rfront] = geoProperties();
-    %Material Properties, starting with just aluminium
-    E = 90e9;
-    v = 0.3;
-    YieldStrength = 276e6;
-    rhoSkin = 2000;%CFRP density kg/m^2
-    rhoStringer = rhoSkin;
-    rhoRib = rhoSkin; 
-
+    
 
     %Loads
     LoadCases = [1,2.5];
     P = 500;
-    Load = csvread('Loads.csv',1,0);
     x = Load(:,1);
     massperL = Load(:,2); %the convention is mass is activing negative, eg downwards is -ve
 
@@ -33,18 +34,12 @@ function [c] = Analysis(x,Stringer)
 
     %MAIN PROCESSING SECTION
 
-    %Call Optimiser here
-
-
-    %Result Analysis, potentially going to bundle this into a function
-
     %Fuselage setup
     %Goes down the length of the fuselage, working out the stringer spacing
     %at each point, through where the radius is constant, this is trivial
     %however at the nose and tail points this is not. Nose is treated as a
     %spherical cap, tail we assume the radius linear decreases until the end
     %point
-
 
 
     %Frame Geometry setup 
@@ -99,7 +94,7 @@ function [c] = Analysis(x,Stringer)
     n = LoadCases;
     %Internal forces
     for i = 1:length(x)-1
-        Q(i,:) = -(trapz(x(i:length(x)),massperL(i:length(x)))*n);
+        Q(i,:) = -(trapz(x(i:length(x)),massperL(i:length(x)))*n*g);
 
     end
 
@@ -222,6 +217,6 @@ function [c] = Analysis(x,Stringer)
 
     gyield = abs(maxSigma)-YieldStrength;
     c = [gyield, maxSigma-columnCrit, maxSigma-plateCrit,maxSigma-stringerCrit,RBlkStress - YieldStrength,FBlkStress-YieldStrength,vonFail];
-
+    ceq = [];
 
 end
