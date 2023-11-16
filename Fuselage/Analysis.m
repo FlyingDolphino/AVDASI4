@@ -4,9 +4,9 @@ function [c,ceq] = Analysis(x,Stringer,Load)
 
 
     %Material Properties, starting with just aluminium
-    E = 90e9;
-    v = 0.3;
-    YieldStrength = 276e6;
+    E = 300e9;
+    v = 0.3750;
+    YieldStrength = 7e9;
 
     
     NumberOfFrames = x(1);
@@ -84,8 +84,6 @@ function [c,ceq] = Analysis(x,Stringer,Load)
 
     end
 
-
-    %Result Analysis, potentially going to bundle this into a function
     My=0; %Temporary!!!!!
 
     EIx = E*IxxDistribution;
@@ -121,12 +119,13 @@ function [c,ceq] = Analysis(x,Stringer,Load)
 
 
 
-        %Axial Stresses due to bending (asym loading case)
+        %Axial Stresses due to bending 
         sigmaZ = zeros(NumberOfStringers,2);
         for i =1:NumberOfStringers
             sigmaZ(i,:) = -E*Mx*stringerPos(i,j)/EIx(j);
         end
-
+        
+        
         %Shear 
         %Start by finding the open section shear flow
         qb = zeros(NumberOfStringers,1);
@@ -161,6 +160,10 @@ function [c,ceq] = Analysis(x,Stringer,Load)
         minSigma(j,:) = min(sigmaZ);
     end
 
+    
+    %Frame sizing
+    frameSize = frameSizer(0.5*max(BM(:,2)),FuselageRadius,YieldStrength);
+    
 
     %Pressure
     d = 2*FuselageRadius;

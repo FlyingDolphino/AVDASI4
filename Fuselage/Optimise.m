@@ -1,10 +1,10 @@
 function[optimum] = Optimise()
     
     %initial variables, these are just what the optimiser starts at
-    NumberOfFrames = 40; %This does not include the front and rear pressure bulkheads! 
-    SkinThickness = 15e-3; %m 
-    StringerThickness =2e-3;%m
-    StringerHeight = 2e-3;%m
+    NumberOfFrames = 30; %This does not include the front and rear pressure bulkheads! 
+    SkinThickness = 6e-3; %m 
+    StringerThickness =6e-3;%m
+    StringerHeight = 6e-3;%m
     
  
     %sets checking variables
@@ -15,8 +15,8 @@ function[optimum] = Optimise()
     for i = 2:30
         Stringer = i;
         x0 =[NumberOfFrames,SkinThickness,StringerThickness,StringerHeight];
-        lb=[2,1e-3,1e-2,1e-2];
-        ub=[60,3,3,3];
+        lb=[2,2e-3,2e-3,2e-3];
+        ub=[60,0.5,0.5,0.5];
 
         nonLinearConstraint = @(x) Analysis(x,Stringer,Load);
         options = optimoptions(@fmincon,'Display','iter','MaxFunctionEvaluations',4e10,'MaxIterations',5e10);

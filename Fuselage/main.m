@@ -1,6 +1,8 @@
 close all
 clear all
 
+format compact
+
 %Run this script
 %Densities of materials are set in MassCalc
 %Geometric information is set in geoProperties
