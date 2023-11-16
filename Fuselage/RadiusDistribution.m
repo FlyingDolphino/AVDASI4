@@ -4,7 +4,7 @@ radii = zeros(length(x),1);
 
 %Nose portion
 %This varies from the radius of the front bulkhead to the main passegner
-%cabin
+%cabin. A linear distribution is used
 gradNose = (fuselageRadius-rfront)/StartX;
 
 
