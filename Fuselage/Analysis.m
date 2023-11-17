@@ -1,37 +1,22 @@
-function [c,ceq] = Analysis(x,Stringer,Load)
+function [c,ceq] = Analysis(x,NumberOfFrames,Stringer,Load,Q,BM)
     
-    g = 9.81;
-
-
-    %Material Properties, starting with just aluminium
+    %Material Properties CFRP
     E = 300e9;
     v = 0.3750;
-    YieldStrength = 7e9;
-
-    
-    NumberOfFrames = x(1);
-    SkinThickness = x(2);
-    StringerThickness = x(3);
-    StringerHeight = x(4);
+    YieldStrength = 7e9; %this also needs to be changed in mass calc
+    SkinThickness = x(1);
+    StringerThickness = x(2);
+    StringerHeight = x(3);
     StringerArea = StringerThickness*StringerHeight;
     NumberOfStringers = Stringer;
     [totalSpan,NoseRadius,TailRadius,FuselageRadius,fuselageStart,FuselageLength,rrear,rfront] = geoProperties();
     
 
     %Loads
-    LoadCases = [1,2.5];
+   
     P = 500;
     x = Load(:,1);
-    massperL = Load(:,2); %the convention is mass is activing negative, eg downwards is -ve
-
-    %DEPRECATED
-    Mx = 0; %Nmm applied to the vertical plane
-    My =0;
-    F = 0; %N
-    Fd = 0;   %mm, distance the shear force is applied from the vertical line of symmetry
-    %this is to be changed to take loads from an excel pending W+B figures
-
-
+   
     %MAIN PROCESSING SECTION
 
     %Fuselage setup
@@ -43,7 +28,7 @@ function [c,ceq] = Analysis(x,Stringer,Load)
 
 
     %Frame Geometry setup 
-    [framePos,buckLength] = FrameAssembly(NumberOfFrames,FuselageLength);
+    [buckLength] = FrameAssembly(NumberOfFrames,totalSpan);
     radii = RadiusDistribution(x,FuselageRadius,NoseRadius,TailRadius,fuselageStart,FuselageLength);
 
 
@@ -60,9 +45,6 @@ function [c,ceq] = Analysis(x,Stringer,Load)
 
         %Boom and Skin idealisation
         %setup positions
-
-
-
         [stringerPos(:,j),b(j)] = StringerDistribution(NumberOfStringers,radii(j)); 
 
 
@@ -70,7 +52,7 @@ function [c,ceq] = Analysis(x,Stringer,Load)
         B(:,j)= BoomArea(SkinThickness,b(j),stringerPos(:,j),StringerArea,NumberOfStringers);
 
 
-        %Second Moment of area
+        %Second Moment of area contribution from booms
         Ixx = 0;
         for i = 1:NumberOfStringers
             if isnan(B(i))
@@ -80,27 +62,15 @@ function [c,ceq] = Analysis(x,Stringer,Load)
             end
 
         end
-        IxxDistribution(j) = Ixx;
-
+        IxxDistribution(j) = Ixx + (pi/4 * (radii(j)^4-(radii(j)-SkinThickness)^4)); %include skin contribution
     end
+    
+    
 
-    My=0; %Temporary!!!!!
+    My=1.0455e7; %Temporary!!!!!
 
     EIx = E*IxxDistribution;
-    Q = zeros(length(x),2);
-    BM = zeros(length(x),2);
-    n = LoadCases;
-    %Internal forces
-    for i = 1:length(x)-1
-        Q(i,:) = -(trapz(x(i:length(x)),massperL(i:length(x)))*n*g);
-
-    end
-
-    %IBM
-    for i = 1:length(x)-1 
-            BM(i,:) = -trapz(x(i:length(x)),Q(i:length(x),:)); 
-    end
-
+    
 
     maxShear = zeros(length(x),2);
     minShear = maxShear;
@@ -109,20 +79,16 @@ function [c,ceq] = Analysis(x,Stringer,Load)
 
     for j = 1:length(x)
 
-        %Does stress calculations for each point along the fuselage for the
-        %constant raidus portion only, as this is where failiure would occur
-
-        %Takes the maximum stress present in the cross section
-
         F = Q(j,:); %internal force at the current position
-        Mx = BM(j,:); %current BM at the position
+        Mz = BM(j,:); %current BM at the position
 
-
-
-        %Axial Stresses due to bending 
-        sigmaZ = zeros(NumberOfStringers,2);
-        for i =1:NumberOfStringers
-            sigmaZ(i,:) = -E*Mx*stringerPos(i,j)/EIx(j);
+        %Axial Stresses due to bending around the cross section
+        theta = linspace(0,2*pi);
+        y = sin(theta);
+        
+        sigmaZ = zeros(length(y),2);
+        for i =1:length(y)
+            sigmaZ(i,:) = -E*Mz*y(i)/EIx(j);
         end
         
         
@@ -161,9 +127,6 @@ function [c,ceq] = Analysis(x,Stringer,Load)
     end
 
     
-    %Frame sizing
-    frameSize = frameSizer(0.5*max(BM(:,2)),FuselageRadius,YieldStrength);
-    
 
     %Pressure
     d = 2*FuselageRadius;
@@ -172,7 +135,7 @@ function [c,ceq] = Analysis(x,Stringer,Load)
     circumStress = 2*longStress;
     longStrain = P*d/(2*t*E) *(0.5-v);
     circumStrain = P*d/(2*t*E) *(1-0.5*v);
-    VolStrain = P*d/(t*E) *(5/4 -v); %volume percentage increase
+    %VolStrain = P*d/(t*E) *(5/4 -v); %volume percentage increase
 
     %Bulkheads, Assuming both a spherical for simplicity, both are bundled in
     %arrays for the failiure matrix
@@ -189,9 +152,9 @@ function [c,ceq] = Analysis(x,Stringer,Load)
     plateCrit = columnCrit;
     for i = 1:length(x)
 
-        Area = NumberOfStringers*StringerArea + pi*(FuselageRadius^2-(radii(i)-SkinThickness)^2);
+        Area = NumberOfStringers*StringerArea + pi*(radii(i)^2-(radii(i)-SkinThickness)^2);
         gyrationRad = sqrt(IxxDistribution(i)/Area);
-        columnCrit(i) = pi^2*E/(buckLength/gyrationRad)^2;
+        columnCrit(i) = pi^2*E/((buckLength/gyrationRad)^2);
 
         %Plate
         plateCrit(i) = 4*pi^2*E/(12*(1-v^2)) *(SkinThickness/b(i))^2;

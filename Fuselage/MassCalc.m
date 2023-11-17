@@ -1,15 +1,14 @@
-function[mass] = MassCalc(propertyArray,NumberOfStringers)
+function[mass] = MassCalc(propertyArray,NumberOfRibs,NumberOfStringers,P)
 
 %Densities
 rhoSkin = 2000;
 rhoRib = rhoSkin;
 rhoStringer = rhoSkin;
+YieldStrength = 7e9;
+%property array = [SkinThickness,StringerThickness,StringerHeight]
 
-%property array = [NumberOfFrames,SkinThickness,StringerThickness,StringerHeight]
-
-StringerArea = propertyArray(3)*propertyArray(4);
-NumberOfRibs = propertyArray(1);
-SkinThickness = propertyArray(2);
+StringerArea = propertyArray(2)*propertyArray(3);
+SkinThickness = propertyArray(1);
 
 
 LDStringer =NumberOfStringers*StringerArea*rhoStringer;
@@ -31,11 +30,12 @@ LDSkin =Askin*rhoSkin*SkinThickness;
 %An estimate for the weight of a single rib, we assume the total area of
 %the rib = 1.5 that of the skin area, and the total length of a rib is = to
 %the skin thickness
-ribWeight = Askin*rhoRib*3e-2;
-totalRibWeight = ribWeight*NumberOfRibs;
 
+%Frame sizing
+frameArea = frameSizer(P,FuselageRadius,YieldStrength);
+ribWeight = frameArea*rhoRib*2*FuselageRadius*pi*NumberOfRibs;
 
-mass = totalSpan*(LDStringer+LDSkin) + totalRibWeight;
+mass = totalSpan*(LDStringer+LDSkin) + ribWeight;
 
 
 
