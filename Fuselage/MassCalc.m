@@ -4,7 +4,7 @@ function[mass] = MassCalc(propertyArray,NumberOfRibs,NumberOfStringers,P)
 rhoSkin = 2000;
 rhoRib = rhoSkin;
 rhoStringer = rhoSkin;
-YieldStrength = 7e9;
+YieldStrength = 2.625e9;
 %property array = [SkinThickness,StringerThickness,StringerHeight]
 
 StringerArea = propertyArray(2)*propertyArray(3);

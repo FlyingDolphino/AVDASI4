@@ -3,7 +3,7 @@ function [Area] = frameSizer(P,R,yieldstrength)
     %This sets the frame size looking at the bending moment distribution
     %around the frame. Takes a force Load, which comes from the maximum
     %vlaue of bending moment
-    
+    P = abs(P);
     yieldstrength = yieldstrength*1.5; %apply saftey factor
      
     theta = linspace(0,2*pi);

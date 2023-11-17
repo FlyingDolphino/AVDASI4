@@ -1,9 +1,9 @@
 function [c,ceq] = Analysis(x,NumberOfFrames,Stringer,Load,Q,BM)
     
     %Material Properties CFRP
-    E = 300e9;
-    v = 0.3750;
-    YieldStrength = 7e9; %this also needs to be changed in mass calc
+    E = 56.25e9;
+    v = 0.3;
+    YieldStrength = 200e6; %this also needs to be changed in mass calc
     SkinThickness = x(1);
     StringerThickness = x(2);
     StringerHeight = x(3);
@@ -14,7 +14,7 @@ function [c,ceq] = Analysis(x,NumberOfFrames,Stringer,Load,Q,BM)
 
     %Loads
    
-    P = 500;
+    P = 64.165e3; %Pa
     x = Load(:,1);
    
     %MAIN PROCESSING SECTION
@@ -52,7 +52,8 @@ function [c,ceq] = Analysis(x,NumberOfFrames,Stringer,Load,Q,BM)
         B(:,j)= BoomArea(SkinThickness,b(j),stringerPos(:,j),StringerArea,NumberOfStringers);
 
 
-        %Second Moment of area contribution from booms
+        %Second Moment of area contribution from booms only, as they carry
+        %the direct stresses
         Ixx = 0;
         for i = 1:NumberOfStringers
             if isnan(B(i))
@@ -62,13 +63,13 @@ function [c,ceq] = Analysis(x,NumberOfFrames,Stringer,Load,Q,BM)
             end
 
         end
-        IxxDistribution(j) = Ixx + (pi/4 * (radii(j)^4-(radii(j)-SkinThickness)^4)); %include skin contribution
+        IxxDistribution(j) = Ixx;
     end
     
     
 
-    My=1.0455e7; %Temporary!!!!!
-
+    My=1.0455e7; %Assymetric load case, only applied where the lift is acting as this is due to assymetrical lift as a point moment
+    MACindex = find(Q(:,2) == max(Q(:,2))); %finds the MAC
     EIx = E*IxxDistribution;
     
 
@@ -81,14 +82,16 @@ function [c,ceq] = Analysis(x,NumberOfFrames,Stringer,Load,Q,BM)
 
         F = Q(j,:); %internal force at the current position
         Mz = BM(j,:); %current BM at the position
+        if j~=MACindex
+            My = 0;
+        end
+        
 
         %Axial Stresses due to bending around the cross section
-        theta = linspace(0,2*pi);
-        y = sin(theta);
-        
-        sigmaZ = zeros(length(y),2);
-        for i =1:length(y)
-            sigmaZ(i,:) = -E*Mz*y(i)/EIx(j);
+ 
+        sigmaZ = zeros(NumberOfStringers,2);
+        for i =1:NumberOfStringers
+            sigmaZ(i,:) = Mz*stringerPos(i)/IxxDistribution(j);
         end
         
         
@@ -119,9 +122,9 @@ function [c,ceq] = Analysis(x,NumberOfFrames,Stringer,Load,Q,BM)
         qPureTorsion = My/(2*A);
         qs = qs+qPureTorsion;
 
-        %extract maximum and minimums
-        maxShear(j,:) = max(qs);
-        minShear(j,:) = min(qs);
+        %extract maximum and minimums stresses
+        maxShear(j,:) = max(qs)/SkinThickness;
+        minShear(j,:) = min(qs)/SkinThickness;
         maxSigma(j,:) = max(sigmaZ);
         minSigma(j,:) = min(sigmaZ);
     end
@@ -131,33 +134,26 @@ function [c,ceq] = Analysis(x,NumberOfFrames,Stringer,Load,Q,BM)
     %Pressure
     d = 2*FuselageRadius;
     t = SkinThickness;  %reassigning variables for easier coding
-    longStress = P*d/4*t;
-    circumStress = 2*longStress;
+    longStress = 1.5*P*d/(4*t);
+    circumStress = ones(length(x),1)*2*longStress; %this is the max value
     longStrain = P*d/(2*t*E) *(0.5-v);
     circumStrain = P*d/(2*t*E) *(1-0.5*v);
     %VolStrain = P*d/(t*E) *(5/4 -v); %volume percentage increase
-
-    %Bulkheads, Assuming both a spherical for simplicity, both are bundled in
-    %arrays for the failiure matrix
-    %Rear Bulkhead
-    RBlkStress = ones(100,1)*P*1.5*rrear/(2*t);
-
-    %front bulkhead
-    FBlkStress = ones(100,1)*P*1.5*rfront/(2*t);
 
 
     %Buckling
     %Column
     columnCrit = zeros(length(x),1);
     plateCrit = columnCrit;
+    crossSectionIx = IxxDistribution + pi/4 *(radii(i)^4-(radii(i)-SkinThickness)^4);
     for i = 1:length(x)
 
         Area = NumberOfStringers*StringerArea + pi*(radii(i)^2-(radii(i)-SkinThickness)^2);
-        gyrationRad = sqrt(IxxDistribution(i)/Area);
-        columnCrit(i) = pi^2*E/((buckLength/gyrationRad)^2);
+        gyrationRad = sqrt(crossSectionIx(i)/Area);
+        columnCrit(i) =E*(pi^2)/((buckLength/gyrationRad)^2);
 
         %Plate
-        plateCrit(i) = 4*pi^2*E/(12*(1-v^2)) *(SkinThickness/b(i))^2;
+        plateCrit(i) = (4*pi^2*E)/(12*(1-v^2)) *(SkinThickness/b(i))^2;
 
 
     end
@@ -165,24 +161,30 @@ function [c,ceq] = Analysis(x,NumberOfFrames,Stringer,Load,Q,BM)
     %stringers as plates
     stringerCrit = 0.43*pi^2*E/(12*(1-v^2)) *(StringerThickness/StringerHeight)^2;
 
-    %Von mises fail condition WIP
-    %principal stresses
+
 
     maxSigma = maxSigma(:,2)*1.5; %selects the higher load case and adds the saftey margin
     minSigma = minSigma(:,2)*1.5;
-    tau_max = maxShear(:,2)*1.5;
-    sigma1 = (maxSigma + minSigma) / 2 + sqrt(((maxSigma - minSigma) / 2).^2 + tau_max.^2);
-    sigma2 = (maxSigma + minSigma) / 2 - sqrt(((maxSigma - minSigma) / 2).^2 + tau_max.^2);
+    maxShear = maxShear(:,2)*1.5;
+    minShear = minShear(:,2)*1.5;
+    
 
-
-    vonMises = sqrt(sigma1.^2 - sigma1.*sigma2 + sigma2.^2 + 3*tau_max.^2);
-    vonFail = vonMises - YieldStrength;
+    %Von mises fail condition WIP
+%principal stresses
+   
+%     sigma1 = (maxSigma + minSigma) / 2 + sqrt(((maxSigma - minSigma) / 2).^2 + maxShear.^2);
+%     sigma2 = (maxSigma + minSigma) / 2 - sqrt(((maxSigma - minSigma) / 2).^2 + maxShear.^2);
+% 
+% 
+%     vonMises = sqrt(sigma1.^2 - sigma1.*sigma2 + sigma2.^2 + 3*maxShear.^2);
+%     vonFail = vonMises - YieldStrength;
 
     %Failiure Matrix, if negative, the structure is safe, this is where we
     %include the 1.5 saftey margin
 
-    gyield = abs(maxSigma)-YieldStrength;
-    c = [gyield, maxSigma-columnCrit, maxSigma-plateCrit,maxSigma-stringerCrit,RBlkStress - YieldStrength,FBlkStress-YieldStrength,vonFail];
+    gyield = (longStress+maxSigma)-YieldStrength;
+    gshearyield = (maxShear+circumStress)-YieldStrength;
+    c = [gyield,gshearyield, maxSigma-columnCrit, maxSigma-plateCrit,maxSigma-stringerCrit,circumStress-YieldStrength];
     ceq = [];
 
 end
