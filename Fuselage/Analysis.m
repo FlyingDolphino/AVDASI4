@@ -1,9 +1,11 @@
 function [c,ceq] = Analysis(x,NumberOfFrames,Stringer,Load,Q,BM)
     
     %Material Properties CFRP
-    E = 56.25e9;
-    v = 0.3;
-    YieldStrength = 200e6; %this also needs to be changed in mass calc
+    E = 70e9;
+    v = 0.34;
+    G = E/(2*(1+v));
+    YieldStrength = 276e6; %this also needs to be changed in mass calc
+    ShearStrength = 207e6;
     SkinThickness = x(1);
     StringerThickness = x(2);
     StringerHeight = x(3);
@@ -81,7 +83,7 @@ function [c,ceq] = Analysis(x,NumberOfFrames,Stringer,Load,Q,BM)
     for j = 1:length(x)
 
         F = Q(j,:); %internal force at the current position
-        Mz = BM(j,:); %current BM at the position
+        Mz = -BM(j,:); %current BM at the position
         if j~=MACindex
             My = 0;
         end
@@ -91,7 +93,7 @@ function [c,ceq] = Analysis(x,NumberOfFrames,Stringer,Load,Q,BM)
  
         sigmaZ = zeros(NumberOfStringers,2);
         for i =1:NumberOfStringers
-            sigmaZ(i,:) = Mz*stringerPos(i)/IxxDistribution(j);
+            sigmaZ(i,:) = (E*Mz*stringerPos(i,j))/EIx(j);
         end
         
         
@@ -183,7 +185,7 @@ function [c,ceq] = Analysis(x,NumberOfFrames,Stringer,Load,Q,BM)
     %include the 1.5 saftey margin
 
     gyield = (longStress+maxSigma)-YieldStrength;
-    gshearyield = (maxShear+circumStress)-YieldStrength;
+    gshearyield = (circumStress+maxShear+0)-ShearStrength;
     c = [gyield,gshearyield, maxSigma-columnCrit, maxSigma-plateCrit,maxSigma-stringerCrit,circumStress-YieldStrength];
     ceq = [];
 
