@@ -5,14 +5,14 @@ function [stringerPos,b] = StringerDistribution(N,radius)
     %fuselage returning the coordinates, (0,0) is the center 
     
     % Calculate the angular separation between points
-    theta = linspace(pi/2, 5/2 * pi, N+1); % +1 to close the circle
+    theta = linspace(90, 5/2 * 180, N+1); % +1 to close the circle
     
    
 
     % Calculate the coordinates of the points, there will be a floating
     % point error, this might be fixed later
-    x = radius * cos(theta(1:end-1));
-    y = radius * sin(theta(1:end-1));
+ 
+    y = radius * sind(theta(1:end-1));
     
     % Plot the fuselage, this is for validation more than anything
 %     t = linspace(0, 2 * pi, 1000);
@@ -26,8 +26,8 @@ function [stringerPos,b] = StringerDistribution(N,radius)
 %     title('Boom and Skin Idealisation of Fuselage');
 %     axis equal;
 %     grid on;
-    
-    %work out the seperation between the points, arc length
+%     
+%     %work out the seperation between the points, arc length
     b = pi*radius*2/N;
     
     

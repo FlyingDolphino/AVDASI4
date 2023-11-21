@@ -15,12 +15,11 @@ function [c,ceq] = Analysis(x,NumberOfFrames,Stringer,Load,Q,BM)
     
 
     %Loads
-   
     P = 64.165e3; %Pa
-    x = Load(:,1);
+    pos = Load(:,1);
+    Mz = 45000; %torque from one engine out condition
    
     %MAIN PROCESSING SECTION
-
     %Fuselage setup
     %Goes down the length of the fuselage, working out the stringer spacing
     %at each point, through where the radius is constant, this is trivial
@@ -28,21 +27,20 @@ function [c,ceq] = Analysis(x,NumberOfFrames,Stringer,Load,Q,BM)
     %spherical cap, tail we assume the radius linear decreases until the end
     %point
 
-
     %Frame Geometry setup 
     [buckLength] = FrameAssembly(NumberOfFrames,totalSpan);
-    radii = RadiusDistribution(x,FuselageRadius,NoseRadius,TailRadius,fuselageStart,FuselageLength);
+    radii = RadiusDistribution(pos,FuselageRadius,NoseRadius,TailRadius,fuselageStart,FuselageLength);
 
 
     %Perform idealisation for each step in the length
     %init arrays
-    B = zeros(NumberOfStringers,length(x));
-    b = zeros(length(x),1);
-    IxxDistribution = zeros(length(x),1);
-    stringerPos = zeros(NumberOfStringers,length(x));
+    B = zeros(NumberOfStringers,length(pos));
+    b = zeros(length(pos),1);
+    CrossSectionIxxDistribution = zeros(length(pos),1);
+    stringerPos = zeros(NumberOfStringers,length(pos));
+    stringerIxx = zeros(NumberOfStringers,length(pos));
 
-
-    for j = 1:length(x)
+    for j = 1:length(pos)
 
 
         %Boom and Skin idealisation
@@ -54,34 +52,37 @@ function [c,ceq] = Analysis(x,NumberOfFrames,Stringer,Load,Q,BM)
         B(:,j)= BoomArea(SkinThickness,b(j),stringerPos(:,j),StringerArea,NumberOfStringers);
 
 
-        %Second Moment of area contribution from booms only, as they carry
-        %the direct stresses
+        %Second Moment of area contribution for each booms 
         Ixx = 0;
+        
         for i = 1:NumberOfStringers
             if isnan(B(i))
                 Ixx;
             else
-                Ixx = Ixx + B(i) * stringerPos(i,j)^2;
+                stringerIxx(i,j) = B(i,j)*stringerPos(i,j)^2;
+                Ixx = Ixx + stringerIxx(i);
+                
             end
 
         end
-        IxxDistribution(j) = Ixx;
+        CrossSectionIxxDistribution(j) = Ixx;
     end
     
     
 
-    My=1.0455e7; %Assymetric load case, only applied where the lift is acting as this is due to assymetrical lift as a point moment
+   
     MACindex = find(Q(:,2) == max(Q(:,2))); %finds the MAC
-    EIx = E*IxxDistribution;
+    EIx = E*CrossSectionIxxDistribution;
+    stringerEIx = E*stringerIxx;
     
 
-    maxShear = zeros(length(x),2);
+    maxShear = zeros(length(pos),2);
     minShear = maxShear;
     maxSigma = maxShear;
     minSigma = maxShear;
 
-    for j = 1:length(x)
-
+    for j = 1:length(pos)
+        My=1.0455e7; %Assymetric load case, only applied where the lift is acting as this is due to assymetrical lift as a point moment
         F = Q(j,:); %internal force at the current position
         Mz = -BM(j,:); %current BM at the position
         if j~=MACindex
@@ -93,10 +94,9 @@ function [c,ceq] = Analysis(x,NumberOfFrames,Stringer,Load,Q,BM)
  
         sigmaZ = zeros(NumberOfStringers,2);
         for i =1:NumberOfStringers
-            sigmaZ(i,:) = (E*Mz*stringerPos(i,j))/EIx(j);
+            sigmaZ(i,:) = (E*Mz*stringerPos(i,j))/stringerEIx(i,j);
         end
-        
-        
+                        
         %Shear 
         %Start by finding the open section shear flow
         qb = zeros(NumberOfStringers,1);
@@ -113,7 +113,7 @@ function [c,ceq] = Analysis(x,NumberOfFrames,Stringer,Load,Q,BM)
         end
 
         qb = abs(qb);
-        qb = F./IxxDistribution(j) .*qb;
+        qb = F./CrossSectionIxxDistribution(j) .*qb;
         %work out the closed section shear flow
         A = pi*radii(j)^2;
         Askin = A/NumberOfStringers;
@@ -137,7 +137,7 @@ function [c,ceq] = Analysis(x,NumberOfFrames,Stringer,Load,Q,BM)
     d = 2*FuselageRadius;
     t = SkinThickness;  %reassigning variables for easier coding
     longStress = 1.5*P*d/(4*t);
-    circumStress = ones(length(x),1)*2*longStress; %this is the max value
+    circumStress = ones(length(pos),1)*2*longStress; %this is the max value
     longStrain = P*d/(2*t*E) *(0.5-v);
     circumStrain = P*d/(2*t*E) *(1-0.5*v);
     %VolStrain = P*d/(t*E) *(5/4 -v); %volume percentage increase
@@ -145,10 +145,10 @@ function [c,ceq] = Analysis(x,NumberOfFrames,Stringer,Load,Q,BM)
 
     %Buckling
     %Column
-    columnCrit = zeros(length(x),1);
+    columnCrit = zeros(length(pos),1);
     plateCrit = columnCrit;
-    crossSectionIx = IxxDistribution + pi/4 *(radii(i)^4-(radii(i)-SkinThickness)^4);
-    for i = 1:length(x)
+    crossSectionIx = CrossSectionIxxDistribution + pi/4 *(radii(i)^4-(radii(i)-SkinThickness)^4);
+    for i = 1:length(pos)
 
         Area = NumberOfStringers*StringerArea + pi*(radii(i)^2-(radii(i)-SkinThickness)^2);
         gyrationRad = sqrt(crossSectionIx(i)/Area);
@@ -184,8 +184,8 @@ function [c,ceq] = Analysis(x,NumberOfFrames,Stringer,Load,Q,BM)
     %Failiure Matrix, if negative, the structure is safe, this is where we
     %include the 1.5 saftey margin
 
-    gyield = (longStress+maxSigma)-YieldStrength;
-    gshearyield = (circumStress+maxShear+0)-ShearStrength;
+    gyield = (maxSigma)-YieldStrength;
+    gshearyield = (maxShear)-ShearStrength;
     c = [gyield,gshearyield, maxSigma-columnCrit, maxSigma-plateCrit,maxSigma-stringerCrit,circumStress-YieldStrength];
     ceq = [];
 

@@ -2,9 +2,9 @@ function[opt] = Optimise()
     
 
     %initial variables, these are just what the optimiser starts at
-    SkinThickness = 0.03; %m 
-    StringerThickness =1e-3;%m
-    StringerHeight = 1e-3;%m
+    SkinThickness = 0.25; %m 
+    StringerThickness =0.25;%m
+    StringerHeight = 0.25;%m
     
 
     %sets checking variables
@@ -21,7 +21,7 @@ function[opt] = Optimise()
     
     for j = 20:40
     NumberOfFrames = j;
-        for i = 10:30 %Boom and skin idealisation is only valid if the distance between booms is small, therefore minimum stringers must meet this condition
+        for i = 10:25 %Boom and skin idealisation is only valid if the distance between booms is small, therefore minimum stringers must meet this condition
             Stringer = i;
             x0 =[SkinThickness,StringerThickness,StringerHeight];
             lb=[1e-3,1e-3,1e-3];

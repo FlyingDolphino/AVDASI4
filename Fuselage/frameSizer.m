@@ -11,8 +11,6 @@ function [Area] = frameSizer(P,R,yieldstrength)
     momentDistribution = P*R/(4*pi) .*(2-cos(theta)-2.*(theta).*sin(theta));
     Na = 3*P/(4*pi)*1.5 ;%normal force in the frame
     
-    
-    
     Area = Na/yieldstrength; %minimum area required as to not fail
     
     %future this can be expanded to size the actual stringer dimensions
