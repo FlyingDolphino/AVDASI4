@@ -2,13 +2,13 @@ function[opt] = Optimise()
     
 
     %initial variables, these are just what the optimiser starts at
-    SkinThickness = 0.25; %m 
-    StringerThickness =0.25;%m
-    StringerHeight = 0.25;%m
+    SkinThickness = 0.04; %m 
+    StringerThickness =0.1;%m
+    StringerHeight = 0.015;%m
     
 
     %sets checking variables
-    fvalCheck= 1e50;
+    
     smallest = 0; %this would store the mass
 
     
@@ -19,13 +19,14 @@ function[opt] = Optimise()
 
     opt = 1e50;
     
-    for j = 20:40
+    for j = 20:50
     NumberOfFrames = j;
+    fvalCheck= 1e50;
         for i = 10:25 %Boom and skin idealisation is only valid if the distance between booms is small, therefore minimum stringers must meet this condition
             Stringer = i;
             x0 =[SkinThickness,StringerThickness,StringerHeight];
-            lb=[1e-3,1e-3,1e-3];
-            ub=[0.5,0.5,0.5];
+            lb=[1e-3,1e-2,1e-2];
+            ub=[0.08,0.05,0.03475];
 
             nonLinearConstraint = @(x) Analysis(x,NumberOfFrames,Stringer,position,Q,BM);
             options = optimoptions(@fmincon,'Display','iter','MaxFunctionEvaluations',4e10,'MaxIterations',5e10,'algorithm','sqp');

@@ -1,10 +1,10 @@
 function [c,ceq] = Analysis(x,NumberOfFrames,Stringer,Load,Q,BM)
     
     %Material Properties CFRP
-    E = 70e9;
+    E = 93.75e9;
     v = 0.34;
     G = E/(2*(1+v));
-    YieldStrength = 276e6; %this also needs to be changed in mass calc
+    YieldStrength = 1.5e9; %this also needs to be changed in mass calc
     ShearStrength = 207e6;
     SkinThickness = x(1);
     StringerThickness = x(2);
@@ -28,7 +28,7 @@ function [c,ceq] = Analysis(x,NumberOfFrames,Stringer,Load,Q,BM)
     %point
 
     %Frame Geometry setup 
-    [buckLength] = FrameAssembly(NumberOfFrames,totalSpan);
+    buckLength = totalSpan/NumberOfFrames;
     radii = RadiusDistribution(pos,FuselageRadius,NoseRadius,TailRadius,fuselageStart,FuselageLength);
 
 
@@ -65,7 +65,7 @@ function [c,ceq] = Analysis(x,NumberOfFrames,Stringer,Load,Q,BM)
             end
 
         end
-        CrossSectionIxxDistribution(j) = Ixx;
+        CrossSectionIxxDistribution(j) = sum(stringerIxx(:,j));
     end
     
     
@@ -145,12 +145,13 @@ function [c,ceq] = Analysis(x,NumberOfFrames,Stringer,Load,Q,BM)
 
     %Buckling
     %Column
+    
     columnCrit = zeros(length(pos),1);
     plateCrit = columnCrit;
-    crossSectionIx = CrossSectionIxxDistribution + pi/4 *(radii(i)^4-(radii(i)-SkinThickness)^4);
+    crossSectionIx = CrossSectionIxxDistribution + (pi/4 .*(radii.^4-(radii-SkinThickness).^4));
     for i = 1:length(pos)
 
-        Area = NumberOfStringers*StringerArea + pi*(radii(i)^2-(radii(i)-SkinThickness)^2);
+        Area = NumberOfStringers*StringerArea + (pi*(radii(i)^2-(radii(i)-SkinThickness)^2));
         gyrationRad = sqrt(crossSectionIx(i)/Area);
         columnCrit(i) =E*(pi^2)/((buckLength/gyrationRad)^2);
 
