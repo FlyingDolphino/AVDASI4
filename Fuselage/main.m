@@ -23,9 +23,9 @@ optimum = Optimise(); %returns the lightest structure that withstands the load c
 
 
 % In future this will be changed to allow plotting
-[position,Q,BM] = theLoader();
-x = [SkinThickness,StringerThickness,StringerHeight];
-c = Analysis(x,NumberOfFrames,NumberOfStringers,position,Q,BM);
+%[position,Q,BM] = theLoader();
+%x = [SkinThickness,StringerThickness,StringerHeight];
+%c = Analysis(x,NumberOfFrames,NumberOfStringers,position,Q,BM);
 % 
 
 %assemble for mass estimation

@@ -1,16 +1,21 @@
 function[mass] = MassCalc(propertyArray,NumberOfRibs,NumberOfStringers,P)
 
+P = P/NumberOfRibs;
+
 %Densities
 rhoSkin = 2000; %CFRP
 rhoRib = 2700;%al lithium
 rhoStringer = rhoSkin;
 YieldStrength = 462e6; %of the frame
 %property array = [SkinThickness,StringerThickness,StringerHeight]
-
-StringerArea = propertyArray(2)*propertyArray(3);
 SkinThickness = propertyArray(1);
+StringerThickness = propertyArray(2);
+StringerHeight = propertyArray(3);
+StringerWidth = propertyArray(4);
 
 
+
+StringerArea = 2*(StringerWidth*StringerThickness)+2*(StringerHeight-StringerThickness)*StringerThickness;
 LDStringer =NumberOfStringers*StringerArea*rhoStringer;
 
 %The skin area, and rib area will be variable in the tail and nose, to
@@ -23,7 +28,7 @@ LDStringer =NumberOfStringers*StringerArea*rhoStringer;
 
 
 Askin = pi*((FuselageRadius^2)-(FuselageRadius-SkinThickness)^2);
-LDSkin =Askin*rhoSkin*SkinThickness;
+LDSkin =Askin*rhoSkin;
 
 %ribs are a bit more complicated, they are at fixed intervals along the
 %fuselage
@@ -32,10 +37,10 @@ LDSkin =Askin*rhoSkin*SkinThickness;
 %the skin thickness
 
 %Frame sizing
-frameArea = frameSizer(P,FuselageRadius,YieldStrength,propertyArray(3));
-ribWeight = frameArea*rhoRib*2*FuselageRadius*pi*NumberOfRibs;
+frameArea = frameSizer(P,FuselageRadius,YieldStrength,propertyArray(3),propertyArray(1));
+Ribweight = frameArea*rhoRib*2*FuselageRadius*pi*NumberOfRibs;
 
-mass = totalSpan*(LDStringer+LDSkin) + ribWeight;
+mass = totalSpan*(LDStringer+LDSkin) + Ribweight;
 
 
 

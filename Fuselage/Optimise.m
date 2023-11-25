@@ -1,60 +1,41 @@
-function[opt] = Optimise()
+function[optimum] = Optimise()
     
 
-    %initial variables, these are just what the optimiser starts at
-    SkinThickness = 0.04; %m 
-    StringerThickness =0.1;%m
-    StringerHeight = 0.015;%m
+    %initial variables, variables set by optimiser. Stringers are assumed
+    %to be top hat shaped
     
+    SkinThickness = 2.9e-3; %m 
+    StringerThickness =2e-3;%m
+    StringerHeight = 20e-3;%m
+    StringerWidth = 20e-3;%m
+    NumberOfFrames = 85;
 
-    %sets checking variables
-    
-    smallest = 0; %this would store the mass
+    lb=[0.5e-3,2e-3,20e-3,20e-3];
+    ub=[8e-3,3e-3,35e-3,35e-3];
 
-    
-    
-    %Internal forces, centered at the MAC. 
+    %Loads internal forces and moments
     [position,Q,BM] = theLoader();
     
 
+    %sets checking variables
     opt = 1e50;
+    smallest = 0;
+    x = [SkinThickness,StringerThickness,StringerHeight,StringerWidth];
     
-    for j = 20:50
-    NumberOfFrames = j;
-    fvalCheck= 1e50;
-        for i = 10:25 %Boom and skin idealisation is only valid if the distance between booms is small, therefore minimum stringers must meet this condition
-            Stringer = i;
-            x0 =[SkinThickness,StringerThickness,StringerHeight];
-            lb=[1e-3,1e-2,1e-2];
-            ub=[0.08,0.05,0.03475];
+    
+    for i = 24:100
+        Stringer = i;
+        x0 = x;
 
-            nonLinearConstraint = @(x) Analysis(x,NumberOfFrames,Stringer,position,Q,BM);
-            options = optimoptions(@fmincon,'Display','iter','MaxFunctionEvaluations',4e10,'MaxIterations',5e10,'algorithm','sqp');
-            [results(i,:), fval,exitflag] = fmincon(@(x)MassCalc(x,NumberOfFrames,Stringer,min(BM(:,2))),x0,[],[],[],[],lb,ub,nonLinearConstraint,options);
+        nonLinearConstraint = @(x) Analysis(x,NumberOfFrames,Stringer,position,Q,BM);
+        options = optimoptions(@fmincon,'Display','iter','MaxFunctionEvaluations',4e10,'MaxIterations',5e10,'algorithm','sqp');
+        [results(i,:), fval,exitflag] = fmincon(@(x)MassCalc(x,NumberOfFrames,Stringer,max(Q(:,2))),x0,[],[],[],[],lb,ub,nonLinearConstraint,options);
 
-            if fvalCheck > fval && exitflag>0
-                fvalCheck = fval;
-                smallest = i;
-            end
-            
-            
+        if opt > fval && exitflag>0
+            opt = fval;
+            smallest = i;
         end
-        if smallest == 0
-            opt;
-        
-        else
-            frameopt = [results(smallest,:),smallest,j,fvalCheck];
-            
-            if frameopt(end) < opt(end)
-                opt = frameopt;
-            end
-        end
-        
-        
     end
-    
-    
-    
-        
+    optimum = [results(smallest,:) smallest, opt];
 
 end

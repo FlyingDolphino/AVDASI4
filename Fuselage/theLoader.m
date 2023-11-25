@@ -5,7 +5,7 @@ function[x,Q,BM] = theLoader()
     g = 9.81;
     Load = csvread('Loads.csv',1,0);
     x = Load(:,1);
-    LoadCases = [1,10];
+    LoadCases = [-1,2.5];
     loadPerL = Load(:,2); %the convention is mass is activing negative, eg downwards is -ve
     pointLoads = Load(:,3); %point loads
     

@@ -34,6 +34,7 @@ function [stringerPos,b] = StringerDistribution(N,radius)
     %output setup
     y = [y]';
     stringerPos = double(y); %converted back to double 
-   
+    
+    
 
 end
