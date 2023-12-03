@@ -3,7 +3,7 @@ function[mass] = MassCalc(propertyArray,NumberOfRibs,NumberOfStringers,P)
 P = P/NumberOfRibs;
 
 %Densities
-rhoSkin = 2000; %CFRP
+rhoSkin = 2000; %CFRP 2000
 rhoRib = 2700;%al lithium
 rhoStringer = rhoSkin;
 YieldStrength = 462e6; %of the frame
@@ -39,6 +39,10 @@ LDSkin =Askin*rhoSkin;
 %Frame sizing
 frameArea = frameSizer(P,FuselageRadius,YieldStrength,propertyArray(3),propertyArray(1));
 Ribweight = frameArea*rhoRib*2*FuselageRadius*pi*NumberOfRibs;
+
+
+CFRP = totalSpan*(LDStringer+LDSkin)
+AL = Ribweight
 
 mass = totalSpan*(LDStringer+LDSkin) + Ribweight;
 

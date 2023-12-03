@@ -14,10 +14,12 @@ function [stringerPos,b] = StringerDistribution(N,radius)
  
     y = radius * sind(theta(1:end-1));
     
+    
     % Plot the fuselage, this is for validation more than anything
-%     t = linspace(0, 2 * pi, 1000);
-%     circleX = radius * cos(t);
-%     circleY = radius * sin(t);
+    x = radius*cosd(theta(1:end-1));
+    t = linspace(0, 2 * pi, 1000);
+    circleX = radius * cos(t);
+    circleY = radius * sin(t);
 %     plot(circleX, circleY, 'LineWidth', 2);
 %     hold on
 %     % Plot the stringers
@@ -26,8 +28,8 @@ function [stringerPos,b] = StringerDistribution(N,radius)
 %     title('Boom and Skin Idealisation of Fuselage');
 %     axis equal;
 %     grid on;
-%     
-%     %work out the seperation between the points, arc length
+    
+    %work out the seperation between the points, arc length
     b = pi*radius*2/N;
     
     

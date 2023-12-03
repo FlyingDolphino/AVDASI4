@@ -1,10 +1,10 @@
 function [c,ceq] = Analysis(x,NumberOfFrames,Stringer,Load,Q,BM)
     
     %Material Properties CFRP
-    E = 93.75e9;
-    v = 0.23;
+    E = 93.75e9; %93.75e9
+    v = 0.23;  %0.23
     G = E/(2*(1+v));
-    YieldStrength = 1.5e9; 
+    YieldStrength = 1.5e9; % 1.5e9
     ShearStrength = 207e6;
     SkinThickness = x(1);
     StringerThickness = x(2);

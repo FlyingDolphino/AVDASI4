@@ -15,7 +15,11 @@ NumberOfStringers = 12;
 SkinThickness = 0.2; %m 
 StringerThickness =100e-3;%m
 StringerHeight = 100e-3;%m
-StringerArea = StringerThickness*StringerHeight;
+
+%do not change, these are the final values
+
+
+
 
 %optimiser
 optimum = Optimise(); %returns the lightest structure that withstands the load cases
